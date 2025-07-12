@@ -4,14 +4,15 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Renderer } from '@/engine/Renderer';
 import { PhysicsWorld } from '@/engine/PhysicsWorld';
-import type { GameConfig, GameState, PerformanceMetrics } from '@/types/game.types';
+import type { GameConfig, PerformanceMetrics } from '@/types/game.types';
+import { GameState } from '@/types/game.types';
 import type { PhysicsConfig } from '@/types/physics.types';
 
 export class Game {
   private container: HTMLElement;
   private config: GameConfig;
-  private renderer: Renderer;
-  private physics: PhysicsWorld;
+  private renderer!: Renderer;
+  private physics!: PhysicsWorld;
   private gameState: GameState = GameState.LOADING;
   private isRunning: boolean = false;
   private lastFrameTime: number = 0;
@@ -165,7 +166,7 @@ export class Game {
     this.renderer.render();
   }
 
-  private updatePerformanceMetrics(currentTime: number, deltaTime: number): void {
+  private updatePerformanceMetrics(_currentTime: number, deltaTime: number): void {
     this.frameCount++;
     
     // Update FPS every second

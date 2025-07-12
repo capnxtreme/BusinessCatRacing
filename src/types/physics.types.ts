@@ -29,7 +29,7 @@ export interface KartPhysicsConfig {
 
 export interface PhysicsBody {
   body: CANNON.Body;
-  mesh?: THREE.Mesh;
+  mesh?: any; // THREE.Mesh but avoiding import
   type: 'kart' | 'track' | 'item' | 'static';
 }
 

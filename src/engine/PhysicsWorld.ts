@@ -4,7 +4,7 @@ import * as CANNON from 'cannon-es';
 import type { PhysicsConfig, PhysicsBody, CollisionEvent } from '@/types/physics.types';
 
 export class PhysicsWorld {
-  private world: CANNON.World;
+  private world!: CANNON.World;
   private config: PhysicsConfig;
   private bodies: Map<string, PhysicsBody> = new Map();
   private debugRenderer?: any; // CannonDebugRenderer type not available
@@ -22,8 +22,8 @@ export class PhysicsWorld {
     this.world.gravity.set(0, this.config.gravity, 0);
     
     // Configure solver
-    this.world.solver.iterations = this.config.solverIterations;
-    this.world.solver.tolerance = 0.001;
+    (this.world.solver as any).iterations = this.config.solverIterations;
+    (this.world.solver as any).tolerance = 0.001;
     
     // Set up broadphase for collision detection optimization
     this.world.broadphase = new CANNON.NaiveBroadphase();
@@ -86,8 +86,8 @@ export class PhysicsWorld {
 
   private processCollisionEvent(collision: CollisionEvent): void {
     // Handle different types of collisions
-    const typeA = collision.bodyA.userData?.type;
-    const typeB = collision.bodyB.userData?.type;
+    const typeA = (collision.bodyA as any).userData?.type;
+    const typeB = (collision.bodyB as any).userData?.type;
 
     if (typeA === 'kart' && typeB === 'kart') {
       this.handleKartCollision(collision);
@@ -104,7 +104,7 @@ export class PhysicsWorld {
     }
   }
 
-  private handleItemCollision(collision: CollisionEvent): void {
+  private handleItemCollision(_collision: CollisionEvent): void {
     console.log('Item collision detected');
     // TODO: Handle item pickup/usage
   }
@@ -120,7 +120,7 @@ export class PhysicsWorld {
     this.lastStepTime = deltaTime;
   }
 
-  public addBody(id: string, body: CANNON.Body, mesh?: THREE.Mesh, type: PhysicsBody['type'] = 'static'): void {
+  public addBody(id: string, body: CANNON.Body, mesh?: any, type: PhysicsBody['type'] = 'static'): void {
     this.world.addBody(body);
     
     const physicsBody: PhysicsBody = {
@@ -132,7 +132,7 @@ export class PhysicsWorld {
     this.bodies.set(id, physicsBody);
     
     // Store type in body userData for collision handling
-    body.userData = { ...body.userData, type, id };
+    (body as any).userData = { ...(body as any).userData, type, id };
   }
 
   public removeBody(id: string): void {
@@ -151,7 +151,7 @@ export class PhysicsWorld {
     return new Map(this.bodies);
   }
 
-  public enableDebugRenderer(scene: THREE.Scene): void {
+  public enableDebugRenderer(_scene: any): void {
     if (this.config.enableDebugRenderer && !this.debugRenderer) {
       // Note: cannon-es-debugger would need to be installed separately
       console.log('Physics debug renderer would be enabled here');

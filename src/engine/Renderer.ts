@@ -3,9 +3,9 @@
 import * as THREE from 'three';
 
 export class Renderer {
-  private renderer: THREE.WebGLRenderer;
-  private scene: THREE.Scene;
-  private camera: THREE.PerspectiveCamera;
+  private renderer!: THREE.WebGLRenderer;
+  private scene!: THREE.Scene;
+  private camera!: THREE.PerspectiveCamera;
   private container: HTMLElement;
 
   constructor(container: HTMLElement) {
