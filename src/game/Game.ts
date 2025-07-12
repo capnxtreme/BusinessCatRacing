@@ -4,15 +4,21 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Renderer } from '@/engine/Renderer';
 import { PhysicsWorld } from '@/engine/PhysicsWorld';
+import { InputManager } from '@/game/InputManager';
+import { Kart } from '@/entities/Kart';
 import type { GameConfig, PerformanceMetrics } from '@/types/game.types';
 import { GameState } from '@/types/game.types';
 import type { PhysicsConfig } from '@/types/physics.types';
+import type { KartConfig } from '@/types/kart.types';
+import { CharacterType } from '@/types/character.types';
 
 export class Game {
   private container: HTMLElement;
   private config: GameConfig;
   private renderer!: Renderer;
   private physics!: PhysicsWorld;
+  private inputManager!: InputManager;
+  private playerKart!: Kart;
   private gameState: GameState = GameState.LOADING;
   private isRunning: boolean = false;
   private lastFrameTime: number = 0;
@@ -46,13 +52,16 @@ export class Game {
       };
       this.physics = new PhysicsWorld(physicsConfig);
 
+      // Initialize input manager
+      this.inputManager = new InputManager();
+
       // Enable physics debug renderer if in development
       if (this.config.enablePhysicsDebug) {
         this.physics.enableDebugRenderer(this.renderer.getScene());
       }
 
-      // Create a simple test scene
-      this.createTestScene();
+      // Create game scene
+      this.createGameScene();
 
       this.gameState = GameState.MENU;
       console.log('Game initialized successfully');
@@ -63,7 +72,7 @@ export class Game {
     }
   }
 
-  private createTestScene(): void {
+  private createGameScene(): void {
     const scene = this.renderer.getScene();
 
     // Add a simple ground plane
@@ -81,20 +90,57 @@ export class Game {
     groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
     this.physics.addBody('ground', groundBody, ground, 'track');
 
-    // Add a test cube
-    const cubeGeometry = new THREE.BoxGeometry(2, 2, 2);
-    const cubeMaterial = new THREE.MeshLambertMaterial({ color: 0x0066CC });
-    const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-    cube.position.set(0, 5, 0);
-    cube.castShadow = true;
-    scene.add(cube);
+    // Create Business Cat kart
+    this.createPlayerKart();
+    
+    // Position camera behind kart
+    const camera = this.renderer.getCamera();
+    camera.position.set(0, 5, 10);
+    camera.lookAt(0, 0, 0);
+  }
 
-    // Add physics for cube
-    const cubeShape = new CANNON.Box(new CANNON.Vec3(1, 1, 1));
-    const cubeBody = new CANNON.Body({ mass: 1 });
-    cubeBody.addShape(cubeShape);
-    cubeBody.position.set(0, 5, 0);
-    this.physics.addBody('testCube', cubeBody, cube, 'kart');
+  private createPlayerKart(): void {
+    // Business Cat kart configuration
+    const kartConfig: KartConfig = {
+      physics: {
+        mass: 180,
+        enginePower: 750,
+        maxSteerAngle: Math.PI / 6,
+        wheelRadius: 0.3,
+        wheelFriction: 1.2,
+        rollResistance: 0.01,
+        suspensionStiffness: 40,
+        suspensionDamping: 0.3,
+        suspensionCompression: 0.1,
+        dragCoefficient: 0.25,
+        downforceCoefficient: 0.1,
+        centerOfMassHeight: 0.4,
+        trackWidth: 1.2,
+        wheelbase: 1.5,
+      },
+      visual: {
+        bodyColor: '#0066CC',
+        bodyMaterial: 'standard',
+        wheelColor: '#333333',
+        wheelSize: 0.3,
+        kartScale: { x: 2, y: 0.8, z: 3 },
+        characterScale: { x: 1, y: 1, z: 1 },
+      },
+      character: CharacterType.BUSINESS_CAT,
+      customization: {
+        bodyColor: '#0066CC',
+        wheelType: 'standard',
+        accessories: [],
+        decals: [],
+      },
+    };
+
+    // Create the kart
+    this.playerKart = new Kart(kartConfig, this.physics);
+    this.playerKart.setPosition({ x: 0, y: 2, z: 0 });
+    
+    // Add kart to scene
+    this.renderer.getScene().add(this.playerKart.getGroup());
   }
 
   public start(): void {
@@ -140,6 +186,15 @@ export class Game {
   }
 
   private update(deltaTime: number): void {
+    // Update input system
+    this.inputManager.update(deltaTime);
+
+    // Update kart with input
+    if (this.playerKart) {
+      this.updateKartControls();
+      this.playerKart.update(deltaTime);
+    }
+
     // Update physics simulation
     this.physics.step(deltaTime);
 
@@ -150,6 +205,29 @@ export class Game {
     if (this.config.enablePhysicsDebug) {
       this.physics.updateDebugRenderer();
     }
+  }
+
+  private updateKartControls(): void {
+    const inputState = this.inputManager.getInputState();
+    
+    // Convert input state to kart controls
+    let accelerate = 0;
+    let brake = 0;
+    let steering = 0;
+
+    if (inputState.accelerate) accelerate = 1;
+    if (inputState.brake) brake = 1;
+    if (inputState.steerLeft) steering = -1;
+    if (inputState.steerRight) steering = 1;
+
+    this.playerKart.setControls({
+      accelerate,
+      brake,
+      steering,
+      drift: inputState.drift,
+      useItem: inputState.useItem,
+      lookBehind: inputState.lookBehind,
+    });
   }
 
   private syncPhysicsToVisuals(): void {
@@ -201,6 +279,12 @@ export class Game {
 
   public dispose(): void {
     this.stop();
+    if (this.inputManager) {
+      this.inputManager.dispose();
+    }
+    if (this.playerKart) {
+      this.playerKart.dispose();
+    }
     if (this.physics) {
       this.physics.dispose();
     }

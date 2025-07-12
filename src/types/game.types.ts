@@ -22,15 +22,9 @@ export enum GameState {
   ERROR = 'error',
 }
 
-export interface InputState {
-  accelerate: boolean;
-  brake: boolean;
-  steerLeft: boolean;
-  steerRight: boolean;
-  drift: boolean;
-  useItem: boolean;
-  lookBehind: boolean;
-}
+// InputState is now defined in input.types.ts for better organization
+// This interface is kept for backward compatibility but should be imported from input.types.ts
+export type { InputState } from './input.types';
 
 export interface PerformanceMetrics {
   fps: number;
