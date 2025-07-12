@@ -103,6 +103,11 @@ export class Game {
       return;
     }
 
+    if (!this.renderer || !this.physics) {
+      console.warn('Game not initialized, cannot start');
+      return;
+    }
+
     console.log('Starting game loop...');
     this.isRunning = true;
     this.gameState = GameState.RACING;
@@ -196,8 +201,12 @@ export class Game {
 
   public dispose(): void {
     this.stop();
-    this.physics.dispose();
-    this.renderer.dispose();
+    if (this.physics) {
+      this.physics.dispose();
+    }
+    if (this.renderer) {
+      this.renderer.dispose();
+    }
     console.log('Game disposed');
   }
 }

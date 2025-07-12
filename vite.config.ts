@@ -15,13 +15,17 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    open: true,
+    open: false,
+    host: 'localhost',
+    hmr: {
+      port: 3001,
+    },
   },
   build: {
     target: 'es2020',
     outDir: 'dist',
     assetsDir: 'assets',
-    sourcemap: true,
+    sourcemap: 'inline',
   },
   optimizeDeps: {
     include: ['three', 'cannon-es'],
