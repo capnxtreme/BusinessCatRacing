@@ -54,6 +54,8 @@ export class Game {
 
       // Initialize input manager
       this.inputManager = new InputManager();
+      this.inputManager.setContext('racing');
+      this.inputManager.setEnabled(true);
 
       // Enable physics debug renderer if in development
       if (this.config.enablePhysicsDebug) {
@@ -219,6 +221,11 @@ export class Game {
     if (inputState.brake) brake = 1;
     if (inputState.steerLeft) steering = -1;
     if (inputState.steerRight) steering = 1;
+
+    // Debug logging
+    if (accelerate > 0 || brake > 0 || Math.abs(steering) > 0) {
+      console.log('Input:', { accelerate, brake, steering });
+    }
 
     this.playerKart.setControls({
       accelerate,

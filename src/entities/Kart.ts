@@ -192,6 +192,7 @@ export class Kart {
     if (this.engineForce > 0) {
       localForward.scale(this.engineForce, forwardForce);
       this.physicsBody.applyForce(forwardForce);
+      console.log('Applying force:', this.engineForce, 'Direction:', localForward);
     }
 
     // Apply steering torque
