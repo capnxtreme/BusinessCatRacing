@@ -183,22 +183,24 @@ export class Kart {
     // Apply steering
     this.steerValue = this.controls.steering * this.config.physics.maxSteerAngle;
 
-    // Calculate forces
-    const forwardForce = new CANNON.Vec3(0, 0, this.engineForce);
+    // Calculate forward direction
     const localForward = new CANNON.Vec3(0, 0, 1);
     this.physicsBody.quaternion.vmult(localForward, localForward);
     
     // Apply forward force
     if (this.engineForce > 0) {
-      localForward.scale(this.engineForce, forwardForce);
+      const forwardForce = localForward.clone();
+      forwardForce.scale(this.engineForce, forwardForce);
       this.physicsBody.applyForce(forwardForce);
-      console.log('Applying force:', this.engineForce, 'Direction:', localForward);
+      console.log('Applying force:', this.engineForce, 'Speed:', this.state.speed);
     }
 
     // Apply steering torque
-    if (Math.abs(this.steerValue) > 0.01 && this.state.speed > 0.5) {
-      const torque = new CANNON.Vec3(0, this.steerValue * this.state.speed * 100, 0);
+    if (Math.abs(this.steerValue) > 0.01) {
+      const speedFactor = Math.max(0.1, this.state.speed * 0.5); // Minimum steering effect
+      const torque = new CANNON.Vec3(0, this.steerValue * speedFactor * 200, 0);
       this.physicsBody.applyTorque(torque);
+      console.log('Applying steering torque:', this.steerValue, 'Speed factor:', speedFactor);
     }
 
     // Apply drag

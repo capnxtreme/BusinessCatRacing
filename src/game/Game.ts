@@ -11,6 +11,7 @@ import { GameState } from '@/types/game.types';
 import type { PhysicsConfig } from '@/types/physics.types';
 import type { KartConfig } from '@/types/kart.types';
 import { CharacterType } from '@/types/character.types';
+import { InputContext } from '@/types/input.types';
 
 export class Game {
   private container: HTMLElement;
@@ -54,7 +55,7 @@ export class Game {
 
       // Initialize input manager
       this.inputManager = new InputManager();
-      this.inputManager.setContext('racing');
+      this.inputManager.setContext(InputContext.RACING);
       this.inputManager.setEnabled(true);
 
       // Enable physics debug renderer if in development
@@ -106,7 +107,7 @@ export class Game {
     const kartConfig: KartConfig = {
       physics: {
         mass: 180,
-        enginePower: 750,
+        enginePower: 5000,
         maxSteerAngle: Math.PI / 6,
         wheelRadius: 0.3,
         wheelFriction: 1.2,

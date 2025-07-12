@@ -67,21 +67,36 @@ export class PhysicsWorld {
   }
 
   private handleCollision(event: any): void {
-    const contact = event.contact;
-    const bodyA = event.target === contact.bi ? contact.bi : contact.bj;
-    const bodyB = event.target === contact.bi ? contact.bj : contact.bi;
+    try {
+      const contact = event.contact;
+      if (!contact || !contact.bi || !contact.bj) {
+        console.warn('Invalid collision event:', event);
+        return;
+      }
 
-    // Calculate collision impulse
-    const impulse = contact.getImpactVelocityAlongNormal();
+      const bodyA = contact.bi;
+      const bodyB = contact.bj;
 
-    const collisionEvent: CollisionEvent = {
-      bodyA,
-      bodyB,
-      contact,
-      impulse: Math.abs(impulse),
-    };
+      // Calculate collision impulse safely
+      let impulse = 0;
+      try {
+        impulse = Math.abs(contact.getImpactVelocityAlongNormal());
+      } catch (error) {
+        console.warn('Could not calculate collision impulse:', error);
+        impulse = 1.0; // Default value
+      }
 
-    this.processCollisionEvent(collisionEvent);
+      const collisionEvent: CollisionEvent = {
+        bodyA,
+        bodyB,
+        contact,
+        impulse,
+      };
+
+      this.processCollisionEvent(collisionEvent);
+    } catch (error) {
+      console.error('Error in collision handler:', error);
+    }
   }
 
   private processCollisionEvent(collision: CollisionEvent): void {
