@@ -28,8 +28,8 @@ export class PhysicsWorld {
     // Set up broadphase for collision detection optimization
     this.world.broadphase = new CANNON.NaiveBroadphase();
     
-    // Enable collision events
-    this.world.addEventListener('beginContact', this.handleCollision.bind(this));
+    // Enable collision events (temporarily disabled for debugging)
+    // this.world.addEventListener('beginContact', this.handleCollision.bind(this));
     
     // Set up default materials and contact materials
     this.setupMaterials();

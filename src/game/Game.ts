@@ -55,8 +55,10 @@ export class Game {
 
       // Initialize input manager
       this.inputManager = new InputManager();
+      this.inputManager.initialize(); // This should attach event listeners
       this.inputManager.setContext(InputContext.RACING);
       this.inputManager.setEnabled(true);
+      console.log('🎮 InputManager setup complete, context:', InputContext.RACING);
 
       // Enable physics debug renderer if in development
       if (this.config.enablePhysicsDebug) {
@@ -146,6 +148,7 @@ export class Game {
     this.renderer.getScene().add(this.playerKart.getGroup());
   }
 
+
   public start(): void {
     if (this.isRunning) {
       console.warn('Game is already running');
@@ -213,6 +216,11 @@ export class Game {
   private updateKartControls(): void {
     const inputState = this.inputManager.getInputState();
     
+    // Debug: Log raw input state every few frames
+    if (this.frameCount % 60 === 0) {
+      console.log('Raw input state:', inputState);
+    }
+    
     // Convert input state to kart controls
     let accelerate = 0;
     let brake = 0;
@@ -223,9 +231,9 @@ export class Game {
     if (inputState.steerLeft) steering = -1;
     if (inputState.steerRight) steering = 1;
 
-    // Debug logging
+    // Debug logging - always log to see if ANY input is detected
     if (accelerate > 0 || brake > 0 || Math.abs(steering) > 0) {
-      console.log('Input:', { accelerate, brake, steering });
+      console.log('🎮 CONTROLS DETECTED:', { accelerate, brake, steering });
     }
 
     this.playerKart.setControls({
@@ -270,8 +278,8 @@ export class Game {
         this.performanceMetrics.memoryUsage = (performance as any).memory.usedJSHeapSize / 1024 / 1024; // MB
       }
 
-      // Log performance in development
-      if (this.config.enablePerformanceMonitoring && this.frameCount % 300 === 0) {
+      // Log performance in development (reduced frequency)
+      if (this.config.enablePerformanceMonitoring && this.frameCount % 3600 === 0) {
         console.log('Performance:', this.performanceMetrics);
       }
     }
