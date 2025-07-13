@@ -383,7 +383,7 @@ export class CameraManager {
         position.add(targetPosition);
         break;
 
-      case CameraFollowType.ORBIT:
+      case CameraFollowType.ORBIT: {
         // Orbit around the target (would need additional orbital parameters)
         const time = performance.now() * 0.001;
         const radius = Math.sqrt(offset.x * offset.x + offset.z * offset.z);
@@ -394,6 +394,7 @@ export class CameraManager {
         );
         position.add(targetPosition);
         break;
+      }
 
       default:
         position.copy(targetPosition).add(new THREE.Vector3(offset.x, offset.y, offset.z));

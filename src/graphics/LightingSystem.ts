@@ -260,7 +260,7 @@ export class LightingSystem {
     // Animate lights for racing excitement
     let time = 0;
     
-    const animate = () => {
+    const animate = (): void => {
       time += 0.016; // ~60fps
       
       // Subtle light flickering for track lights
