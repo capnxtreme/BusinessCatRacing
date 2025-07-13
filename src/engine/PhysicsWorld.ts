@@ -124,7 +124,7 @@ export class PhysicsWorld {
     // TODO: Handle item pickup/usage
   }
 
-  public step(deltaTime: number): void {
+  public step(deltaTime: number = 0.016): void {
     // Use fixed timestep for consistent physics
     this.world.step(
       this.config.fixedTimeStep,

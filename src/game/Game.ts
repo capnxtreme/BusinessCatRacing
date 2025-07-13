@@ -1,11 +1,12 @@
 // Main game class that orchestrates all systems
 
-import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { Renderer } from '@/engine/Renderer';
 import { PhysicsWorld } from '@/engine/PhysicsWorld';
 import { InputManager } from '@/game/InputManager';
 import { Kart } from '@/entities/Kart';
+import { Track } from '@/world/Track';
+import { ParticleSystem } from '@/graphics/ParticleSystem';
+import { CameraController, CameraMode } from '@/game/CameraController';
 import type { GameConfig, PerformanceMetrics } from '@/types/game.types';
 import { GameState } from '@/types/game.types';
 import type { PhysicsConfig } from '@/types/physics.types';
@@ -20,6 +21,9 @@ export class Game {
   private physics!: PhysicsWorld;
   private inputManager!: InputManager;
   private playerKart!: Kart;
+  private track!: Track;
+  private particleSystem!: ParticleSystem;
+  private cameraController!: CameraController;
   private gameState: GameState = GameState.LOADING;
   private isRunning: boolean = false;
   private lastFrameTime: number = 0;
@@ -65,6 +69,9 @@ export class Game {
         this.physics.enableDebugRenderer(this.renderer.getScene());
       }
 
+      // Initialize particle system
+      this.particleSystem = new ParticleSystem(this.renderer.getScene());
+
       // Create game scene
       this.createGameScene();
 
@@ -80,46 +87,55 @@ export class Game {
   private createGameScene(): void {
     const scene = this.renderer.getScene();
 
-    // Add a simple ground plane
-    const groundGeometry = new THREE.PlaneGeometry(100, 100);
-    const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x90EE90 });
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    scene.add(ground);
-
-    // Add physics for ground
-    const groundShape = new CANNON.Plane();
-    const groundBody = new CANNON.Body({ mass: 0 });
-    groundBody.addShape(groundShape);
-    groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
-    this.physics.addBody('ground', groundBody, ground, 'track');
+    // Create professional racing track
+    this.track = new Track(scene, this.physics, {
+      name: 'Corporate Speedway',
+      length: 2000,
+      width: 8,
+      difficulty: 'easy',
+      theme: 'corporate'
+    });
+    this.track.createOvalTrack();
 
     // Create Business Cat kart
     this.createPlayerKart();
     
-    // Position camera behind kart
-    const camera = this.renderer.getCamera();
-    camera.position.set(0, 5, 10);
-    camera.lookAt(0, 0, 0);
+    // Position kart at track start
+    const startPos = this.track.getStartPosition();
+    const startRot = this.track.getStartRotation();
+    this.playerKart.setPosition(startPos);
+    
+    // Apply starting rotation
+    const physicsBody = this.playerKart.getPhysicsBody();
+    physicsBody.quaternion.setFromEuler(startRot.x, startRot.y, startRot.z);
+    
+    // Setup dynamic camera system
+    this.cameraController = new CameraController(this.renderer.getCamera(), this.playerKart, {
+      mode: CameraMode.CHASE,
+      distance: 8,
+      height: 4,
+      lookAhead: 3,
+      smoothing: 0.08,
+      fov: 75
+    });
   }
 
   private createPlayerKart(): void {
     // Business Cat kart configuration
     const kartConfig: KartConfig = {
       physics: {
-        mass: 180,
-        enginePower: 5000,
-        maxSteerAngle: Math.PI / 6,
+        mass: 180, // Realistic kart weight
+        enginePower: 8, // Much more realistic (acceleration multiplier)
+        maxSteerAngle: Math.PI / 6, // Realistic steering angle
         wheelRadius: 0.3,
-        wheelFriction: 1.2,
-        rollResistance: 0.01,
+        wheelFriction: 1.0, // Standard grip
+        rollResistance: 0.02, // Realistic rolling resistance
         suspensionStiffness: 40,
         suspensionDamping: 0.3,
         suspensionCompression: 0.1,
-        dragCoefficient: 0.25,
+        dragCoefficient: 0.15, // Realistic drag
         downforceCoefficient: 0.1,
-        centerOfMassHeight: 0.4,
+        centerOfMassHeight: 0.4, // Realistic center of mass
         trackWidth: 1.2,
         wheelbase: 1.5,
       },
@@ -140,8 +156,8 @@ export class Game {
       },
     };
 
-    // Create the kart
-    this.playerKart = new Kart(kartConfig, this.physics);
+    // Create the kart with particle system
+    this.playerKart = new Kart(kartConfig, this.physics, this.particleSystem);
     this.playerKart.setPosition({ x: 0, y: 2, z: 0 });
     
     // Add kart to scene
@@ -191,7 +207,7 @@ export class Game {
     requestAnimationFrame(() => this.gameLoop());
   }
 
-  private update(deltaTime: number): void {
+  private update(deltaTime: number = 0.016): void {
     // Update input system
     this.inputManager.update(deltaTime);
 
@@ -203,6 +219,12 @@ export class Game {
 
     // Update physics simulation
     this.physics.step(deltaTime);
+
+    // Update particle system
+    this.particleSystem.update(deltaTime);
+
+    // Update camera to follow kart
+    this.cameraController.update(deltaTime);
 
     // Update visual objects to match physics bodies
     this.syncPhysicsToVisuals();
@@ -216,9 +238,11 @@ export class Game {
   private updateKartControls(): void {
     const inputState = this.inputManager.getInputState();
     
-    // Debug: Log raw input state every few frames
-    if (this.frameCount % 60 === 0) {
-      console.log('Raw input state:', inputState);
+    // Debug: Log raw input state less frequently  
+    if (this.frameCount % 300 === 0) { // Every 5 seconds instead of every second
+      const kartPos = this.playerKart.getState().position;
+      const camera = this.renderer.getCamera();
+      console.log('📊 Kart:', kartPos.x.toFixed(1), kartPos.z.toFixed(1), 'Camera:', camera.position.x.toFixed(1), camera.position.z.toFixed(1));
     }
     
     // Convert input state to kart controls
@@ -231,9 +255,14 @@ export class Game {
     if (inputState.steerLeft) steering = -1;
     if (inputState.steerRight) steering = 1;
 
-    // Debug logging - always log to see if ANY input is detected
-    if (accelerate > 0 || brake > 0 || Math.abs(steering) > 0) {
-      console.log('🎮 CONTROLS DETECTED:', { accelerate, brake, steering });
+    // Camera switching (C key to cycle through camera modes)
+    if (inputState.lookBehind) { // Using lookBehind key (C) for camera switching
+      this.switchCameraMode();
+    }
+
+    // Debug logging - reduced frequency to avoid spam
+    if ((accelerate > 0 || brake > 0 || Math.abs(steering) > 0) && Math.random() < 0.02) {
+      console.log('🎮 CONTROLS:', { accelerate, brake, steering });
     }
 
     this.playerKart.setControls({
@@ -242,8 +271,25 @@ export class Game {
       steering,
       drift: inputState.drift,
       useItem: inputState.useItem,
-      lookBehind: inputState.lookBehind,
+      lookBehind: false, // Don't pass camera switching to kart
     });
+  }
+
+  private lastCameraSwitchTime: number = 0;
+
+  private switchCameraMode(): void {
+    const currentTime = performance.now();
+    if (currentTime - this.lastCameraSwitchTime < 500) return; // Prevent rapid switching
+    
+    const currentMode = this.cameraController.getCameraMode();
+    const modes = [CameraMode.CHASE, CameraMode.FOLLOW, CameraMode.OVERHEAD, CameraMode.COCKPIT];
+    const currentIndex = modes.indexOf(currentMode);
+    const nextIndex = (currentIndex + 1) % modes.length;
+    
+    this.cameraController.setCameraMode(modes[nextIndex]);
+    console.log(`📷 Camera mode switched to: ${modes[nextIndex]}`);
+    
+    this.lastCameraSwitchTime = currentTime;
   }
 
   private syncPhysicsToVisuals(): void {
@@ -265,7 +311,7 @@ export class Game {
     this.renderer.render();
   }
 
-  private updatePerformanceMetrics(_currentTime: number, deltaTime: number): void {
+  private updatePerformanceMetrics(_currentTime: number, deltaTime: number = 0.016): void {
     this.frameCount++;
     
     // Update FPS every second
@@ -300,6 +346,12 @@ export class Game {
     }
     if (this.playerKart) {
       this.playerKart.dispose();
+    }
+    if (this.particleSystem) {
+      this.particleSystem.dispose();
+    }
+    if (this.track) {
+      this.track.dispose();
     }
     if (this.physics) {
       this.physics.dispose();

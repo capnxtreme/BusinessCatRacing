@@ -203,7 +203,7 @@ export class CameraManager {
     this.emit('transitionStarted', { transition });
   }
 
-  public update(deltaTime: number): void {
+  public update(deltaTime: number = 0.016): void {
     // Update transitions
     if (this.state.isTransitioning) {
       this.updateTransition(deltaTime);
@@ -231,7 +231,7 @@ export class CameraManager {
     this.applyCameraTransform();
   }
 
-  private updateTransition(_deltaTime: number): void {
+  private updateTransition(_deltaTime: number = 0.016): void {
     if (!this.transitionData) return;
 
     const elapsed = performance.now() - this.transitionData.startTime;
@@ -292,7 +292,7 @@ export class CameraManager {
     this.updateCameraFromConfig();
   }
 
-  private updateShake(deltaTime: number): void {
+  private updateShake(deltaTime: number = 0.016): void {
     if (!this.state.shake.isActive) return;
 
     this.state.shake.timeRemaining -= deltaTime * 1000; // Convert to milliseconds
@@ -314,7 +314,7 @@ export class CameraManager {
     this.state.shake.currentIntensity *= 0.95;
   }
 
-  private updateCameraPosition(_deltaTime: number): void {
+  private updateCameraPosition(_deltaTime: number = 0.016): void {
     if (!this.state.currentTarget) {
       return;
     }

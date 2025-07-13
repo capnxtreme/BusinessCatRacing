@@ -106,7 +106,7 @@ export class InputManager {
    * Update the input manager (should be called each frame)
    * This handles smooth input transitions and contextual input processing
    */
-  public update(deltaTime: number): void {
+  public update(deltaTime: number = 0.016): void {
     if (!this.isEnabled) return;
 
     // Process smooth input transitions for analog-like behavior
@@ -389,7 +389,7 @@ export class InputManager {
   /**
    * Update smooth input transitions for analog-like behavior
    */
-  private updateSmoothInputs(_deltaTime: number): void {
+  private updateSmoothInputs(_deltaTime: number = 0.016): void {
     // This method is reserved for future implementation of smooth input transitions
     // that would provide analog-like behavior for digital inputs (keyboard)
     // For now, inputs are binary (on/off), but this could be enhanced to provide
